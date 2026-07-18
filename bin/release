@@ -6,5 +6,7 @@ cat <<'EOF'
 addons: []
 config_vars:
   PLAYWRIGHT_BROWSERS_PATH: /app/.cache/ms-playwright
+  PLAYWRIGHT_BUILDPACK_BROWSERS: chromium-headless-shell
+  PLAYWRIGHT_INSTALL_NATIVE_DEPS: "true"
   PLAYWRIGHT_SKIP_BROWSER_GC: "1"
 EOF

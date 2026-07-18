@@ -1,0 +1,169 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+BUILD_DIR=${1:?BUILD_DIR is required}
+CACHE_DIR=${2:?CACHE_DIR is required}
+STACK_NAME=${3:-${STACK:-}}
+PACKAGE_LIST=${4:-}
+
+log() {
+  printf -- '-----> %s\n' "$*"
+}
+
+warn() {
+  printf -- ' !     %s\n' "$*" >&2
+}
+
+chromium_packages_for_stack() {
+  case "$STACK_NAME" in
+    heroku-26|ubuntu26.04|ubuntu-26.04|26.04|heroku-24|ubuntu24.04|ubuntu-24.04|24.04)
+      cat <<'EOF'
+libasound2t64
+libatk-bridge2.0-0t64
+libatk1.0-0t64
+libatspi2.0-0t64
+libcairo2
+libcups2t64
+libdbus-1-3
+libdrm2
+libgbm1
+libglib2.0-0t64
+libnspr4
+libnss3
+libpango-1.0-0
+libx11-6
+libxcb1
+libxcomposite1
+libxdamage1
+libxext6
+libxfixes3
+libxkbcommon0
+libxrandr2
+EOF
+      ;;
+    heroku-22|ubuntu22.04|ubuntu-22.04|22.04|*)
+      cat <<'EOF'
+libasound2
+libatk-bridge2.0-0
+libatk1.0-0
+libatspi2.0-0
+libcairo2
+libcups2
+libdbus-1-3
+libdrm2
+libgbm1
+libglib2.0-0
+libnspr4
+libnss3
+libpango-1.0-0
+libwayland-client0
+libx11-6
+libxcb1
+libxcomposite1
+libxdamage1
+libxext6
+libxfixes3
+libxkbcommon0
+libxrandr2
+EOF
+      ;;
+  esac
+}
+
+if [ -n "$PACKAGE_LIST" ]; then
+  PACKAGES=$PACKAGE_LIST
+else
+  PACKAGES=$(chromium_packages_for_stack | tr '\n' ' ')
+fi
+
+if ! command -v apt-get >/dev/null 2>&1; then
+  warn "apt-get was not found; cannot install Playwright native dependencies."
+  exit 1
+fi
+
+if ! command -v dpkg >/dev/null 2>&1; then
+  warn "dpkg was not found; cannot unpack Playwright native dependencies."
+  exit 1
+fi
+
+APT_CACHE_DIR="$CACHE_DIR/apt/cache"
+APT_STATE_DIR="$CACHE_DIR/apt/state"
+APT_SOURCELIST_DIR="$CACHE_DIR/apt/sources"
+APT_SOURCEPARTS_DIR="$APT_SOURCELIST_DIR/sources.list.d"
+APT_SOURCES="$APT_SOURCELIST_DIR/sources.list"
+STACK_VERSION_FILE="$CACHE_DIR/.apt/STACK"
+
+CACHED_STACK=""
+if [ -f "$STACK_VERSION_FILE" ]; then
+  CACHED_STACK=$(cat "$STACK_VERSION_FILE")
+fi
+
+mkdir -p "$CACHE_DIR/.apt"
+printf '%s' "$STACK_NAME" > "$STACK_VERSION_FILE"
+
+PACKAGE_HASH=$(printf '%s' "$PACKAGES" | sha256sum | cut -d' ' -f1)
+PACKAGE_HASH_FILE="$CACHE_DIR/.apt/PACKAGES_SHA256"
+CACHED_PACKAGE_HASH=""
+if [ -f "$PACKAGE_HASH_FILE" ]; then
+  CACHED_PACKAGE_HASH=$(cat "$PACKAGE_HASH_FILE")
+fi
+
+if [ "$CACHED_STACK" != "$STACK_NAME" ] || [ "$CACHED_PACKAGE_HASH" != "$PACKAGE_HASH" ]; then
+  log "Detected native dependency or stack changes; refreshing APT cache"
+  rm -rf "$CACHE_DIR/apt"
+  mkdir -p "$APT_CACHE_DIR/archives/partial" "$APT_STATE_DIR/lists/partial" "$APT_SOURCELIST_DIR"
+  if [ -f /etc/apt/sources.list ]; then
+    cat /etc/apt/sources.list > "$APT_SOURCES"
+  else
+    : > "$APT_SOURCES"
+  fi
+  if [ -d /etc/apt/sources.list.d ]; then
+    cp -R /etc/apt/sources.list.d "$APT_SOURCEPARTS_DIR"
+  else
+    mkdir -p "$APT_SOURCEPARTS_DIR"
+  fi
+  printf '%s' "$PACKAGE_HASH" > "$PACKAGE_HASH_FILE"
+else
+  log "Reusing native dependency APT cache"
+  mkdir -p "$APT_CACHE_DIR/archives/partial" "$APT_STATE_DIR/lists/partial" "$APT_SOURCELIST_DIR" "$APT_SOURCEPARTS_DIR"
+  if [ ! -f "$APT_SOURCES" ]; then
+    if [ -f /etc/apt/sources.list ]; then
+      cat /etc/apt/sources.list > "$APT_SOURCES"
+    else
+      : > "$APT_SOURCES"
+    fi
+  fi
+fi
+
+APT_OPTIONS=(
+  -o "debug::nolocking=true"
+  -o "dir::cache=$APT_CACHE_DIR"
+  -o "dir::state=$APT_STATE_DIR"
+  -o "dir::etc::sourcelist=$APT_SOURCES"
+  -o "dir::etc::sourceparts=$APT_SOURCEPARTS_DIR"
+)
+
+log "Updating APT package index"
+apt-get "${APT_OPTIONS[@]}" update
+
+# shellcheck disable=SC2206
+PACKAGE_ARRAY=($PACKAGES)
+
+log "Fetching Playwright native dependencies for ${STACK_NAME:-unknown stack}"
+apt-get "${APT_OPTIONS[@]}" -y --allow-downgrades --allow-remove-essential --allow-change-held-packages \
+  -d install --reinstall "${PACKAGE_ARRAY[@]}"
+
+mkdir -p "$BUILD_DIR/.apt"
+shopt -s nullglob
+DEBS=("$APT_CACHE_DIR"/archives/*.deb)
+if [ ${#DEBS[@]} -eq 0 ]; then
+  warn "No .deb files were downloaded for Playwright native dependencies."
+  exit 1
+fi
+
+for deb in "${DEBS[@]}"; do
+  log "Installing $(basename "$deb")"
+  dpkg -x "$deb" "$BUILD_DIR/.apt/"
+done
+
+log "Playwright native dependencies installed"
