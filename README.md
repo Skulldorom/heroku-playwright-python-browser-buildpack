@@ -52,25 +52,12 @@ heroku config:set PLAYWRIGHT_BUILDPACK_BROWSERS=chromium --app <app-name>
 heroku config:set PLAYWRIGHT_INSTALL_OPTIONS=--only-shell --app <app-name>
 ```
 
-## Usage with this TEC Portal backend
-
-The backend already depends on Playwright in `pyproject.toml` / `uv.lock`, so the app-side fix is just buildpack ordering:
-
-```bash
-heroku buildpacks:add heroku/python --app technology-today-portal-flask
-heroku buildpacks:add https://github.com/Technology-Today-Ltd/heroku-playwright-python-browser-buildpack --app technology-today-portal-flask
-```
-
-Then redeploy.
-
 Verify after deploy:
 
 ```bash
 heroku run 'python -m playwright install --list' --app technology-today-portal-flask
 heroku logs --tail --app technology-today-portal-flask
 ```
-
-Then hit a quote PDF endpoint and confirm it returns `200 application/pdf`.
 
 ## Packaging a tarball
 
