@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+cat <<'EOF'
+---
+addons: []
+config_vars:
+  PLAYWRIGHT_BROWSERS_PATH: .cache/ms-playwright
+EOF

@@ -1,0 +1,66 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+BUILD_DIR=${1:?BUILD_DIR is required}
+CACHE_DIR=${2:?CACHE_DIR is required}
+ENV_DIR=${3:?ENV_DIR is required}
+
+get_config() {
+  local name=$1
+  local default_value=${2:-}
+
+  if [ -f "$ENV_DIR/$name" ]; then
+    cat "$ENV_DIR/$name"
+  elif [ -n "${!name:-}" ]; then
+    printf '%s' "${!name}"
+  else
+    printf '%s' "$default_value"
+  fi
+}
+
+log() {
+  printf -- '-----> %s\n' "$*"
+}
+
+warn() {
+  printf -- ' !     %s\n' "$*" >&2
+}
+
+cd "$BUILD_DIR"
+
+BROWSERS=$(get_config PLAYWRIGHT_BUILDPACK_BROWSERS chromium)
+INSTALL_OPTIONS=$(get_config PLAYWRIGHT_INSTALL_OPTIONS "")
+INSTALL_PATH=$(get_config PLAYWRIGHT_BROWSERS_PATH ".cache/ms-playwright")
+
+case "$INSTALL_PATH" in
+  /*) ABS_INSTALL_PATH=$INSTALL_PATH ;;
+  *) ABS_INSTALL_PATH="$BUILD_DIR/$INSTALL_PATH" ;;
+esac
+
+if ! command -v python >/dev/null 2>&1; then
+  warn "python was not found on PATH. Add this buildpack after heroku/python."
+  exit 1
+fi
+
+if ! python -c 'import playwright' >/dev/null 2>&1; then
+  warn "Python package 'playwright' is not installed. Add playwright to your Python dependencies and run this buildpack after heroku/python."
+  exit 1
+fi
+
+mkdir -p "$ABS_INSTALL_PATH"
+
+log "Installing Playwright browsers: $BROWSERS"
+log "PLAYWRIGHT_BROWSERS_PATH=$ABS_INSTALL_PATH"
+
+export PLAYWRIGHT_BROWSERS_PATH="$ABS_INSTALL_PATH"
+
+# shellcheck disable=SC2086
+python -m playwright install $BROWSERS $INSTALL_OPTIONS
+
+PROFILE_DIR="$BUILD_DIR/.profile.d"
+mkdir -p "$PROFILE_DIR"
+cat > "$PROFILE_DIR/playwright-browsers.sh" <<EOF
+export PLAYWRIGHT_BROWSERS_PATH='$ABS_INSTALL_PATH'
+EOF
+
+log "Playwright browser installation complete"
