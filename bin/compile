@@ -4,6 +4,7 @@ set -euo pipefail
 BUILD_DIR=${1:?BUILD_DIR is required}
 CACHE_DIR=${2:?CACHE_DIR is required}
 ENV_DIR=${3:?ENV_DIR is required}
+BUILDPACK_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 
 get_config() {
   local name=$1
@@ -26,11 +27,21 @@ warn() {
   printf -- ' !     %s\n' "$*" >&2
 }
 
+is_truthy() {
+  case "${1,,}" in
+    1|true|yes|y|on) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
 cd "$BUILD_DIR"
 
 BROWSERS=$(get_config PLAYWRIGHT_BUILDPACK_BROWSERS chromium-headless-shell)
 INSTALL_OPTIONS=$(get_config PLAYWRIGHT_INSTALL_OPTIONS "")
 INSTALL_PATH=$(get_config PLAYWRIGHT_BROWSERS_PATH ".cache/ms-playwright")
+INSTALL_NATIVE_DEPS=$(get_config PLAYWRIGHT_INSTALL_NATIVE_DEPS true)
+NATIVE_DEPS_PACKAGES=$(get_config PLAYWRIGHT_NATIVE_DEPS_PACKAGES "")
+STACK_NAME=${STACK:-$(get_config STACK "")}
 
 case "$INSTALL_PATH" in
   /*)
@@ -53,19 +64,32 @@ if ! python -c 'import playwright' >/dev/null 2>&1; then
   exit 1
 fi
 
+PROFILE_DIR="$BUILD_DIR/.profile.d"
+mkdir -p "$PROFILE_DIR"
+
+if is_truthy "$INSTALL_NATIVE_DEPS"; then
+  log "Installing Playwright native dependencies"
+  "$BUILDPACK_DIR/bin/install-native-deps" "$BUILD_DIR" "$CACHE_DIR" "$STACK_NAME" "$NATIVE_DEPS_PACKAGES"
+else
+  log "Skipping Playwright native dependency install"
+fi
+
 mkdir -p "$ABS_INSTALL_PATH"
 
 log "Installing Playwright browsers: $BROWSERS"
 log "PLAYWRIGHT_BROWSERS_PATH=$ABS_INSTALL_PATH"
 
 export PLAYWRIGHT_BROWSERS_PATH="$ABS_INSTALL_PATH"
+export PLAYWRIGHT_SKIP_BROWSER_GC=1
 
 # shellcheck disable=SC2086
 python -m playwright install $BROWSERS $INSTALL_OPTIONS
 
-PROFILE_DIR="$BUILD_DIR/.profile.d"
-mkdir -p "$PROFILE_DIR"
 cat > "$PROFILE_DIR/playwright-browsers.sh" <<EOF
+export PATH='\$HOME/.apt/usr/bin:'"\$PATH"
+export LD_LIBRARY_PATH='\$HOME/.apt/usr/lib/x86_64-linux-gnu:\$HOME/.apt/usr/lib/i386-linux-gnu:\$HOME/.apt/usr/lib:\$HOME/.apt/lib/x86_64-linux-gnu:\$HOME/.apt/lib:'"\${LD_LIBRARY_PATH:-}"
+export LIBRARY_PATH='\$HOME/.apt/usr/lib/x86_64-linux-gnu:\$HOME/.apt/usr/lib/i386-linux-gnu:\$HOME/.apt/usr/lib:\$HOME/.apt/lib/x86_64-linux-gnu:\$HOME/.apt/lib:'"\${LIBRARY_PATH:-}"
+export PKG_CONFIG_PATH='\$HOME/.apt/usr/lib/x86_64-linux-gnu/pkgconfig:\$HOME/.apt/usr/lib/i386-linux-gnu/pkgconfig:\$HOME/.apt/usr/lib/pkgconfig:'"\${PKG_CONFIG_PATH:-}"
 export PLAYWRIGHT_BROWSERS_PATH='$RUNTIME_INSTALL_PATH'
 export PLAYWRIGHT_SKIP_BROWSER_GC='1'
 EOF
