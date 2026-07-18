@@ -41,15 +41,16 @@ Optional Heroku config vars:
 
 | Variable | Default | Description |
 | --- | --- | --- |
-| `PLAYWRIGHT_BUILDPACK_BROWSERS` | `chromium` | Browser list passed to `python -m playwright install`. Examples: `chromium`, `firefox`, `webkit`, or `chromium firefox`. |
-| `PLAYWRIGHT_INSTALL_OPTIONS` | empty | Extra install flags, for example `--only-shell`. |
-| `PLAYWRIGHT_BROWSERS_PATH` | `.cache/ms-playwright` | Relative or absolute install path. Relative paths are placed under Heroku's slug build dir. |
+| `PLAYWRIGHT_BUILDPACK_BROWSERS` | `chromium-headless-shell` | Browser list passed to `python -m playwright install`. The default matches Playwright's default `headless=True` launch path. Use `chromium` if your app needs the full browser. |
+| `PLAYWRIGHT_INSTALL_OPTIONS` | empty | Extra install flags. Usually leave empty with the default browser. |
+| `PLAYWRIGHT_BROWSERS_PATH` | `/app/.cache/ms-playwright` at runtime | Runtime browser path. During build, relative paths are installed under Heroku's slug build dir and exported as `/app/<path>` for dynos. |
+| `PLAYWRIGHT_SKIP_BROWSER_GC` | `1` | Prevent Playwright from garbage-collecting browser binaries installed by the buildpack. |
 
 Example:
 
 ```bash
-heroku config:set PLAYWRIGHT_BUILDPACK_BROWSERS=chromium --app <app-name>
-heroku config:set PLAYWRIGHT_INSTALL_OPTIONS=--only-shell --app <app-name>
+heroku config:set PLAYWRIGHT_BUILDPACK_BROWSERS=chromium-headless-shell --app <app-name>
+heroku config:set PLAYWRIGHT_BROWSERS_PATH=/app/.cache/ms-playwright --app <app-name>
 ```
 
 Verify after deploy:

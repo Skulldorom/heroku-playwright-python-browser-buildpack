@@ -28,13 +28,19 @@ warn() {
 
 cd "$BUILD_DIR"
 
-BROWSERS=$(get_config PLAYWRIGHT_BUILDPACK_BROWSERS chromium)
+BROWSERS=$(get_config PLAYWRIGHT_BUILDPACK_BROWSERS chromium-headless-shell)
 INSTALL_OPTIONS=$(get_config PLAYWRIGHT_INSTALL_OPTIONS "")
 INSTALL_PATH=$(get_config PLAYWRIGHT_BROWSERS_PATH ".cache/ms-playwright")
 
 case "$INSTALL_PATH" in
-  /*) ABS_INSTALL_PATH=$INSTALL_PATH ;;
-  *) ABS_INSTALL_PATH="$BUILD_DIR/$INSTALL_PATH" ;;
+  /*)
+    ABS_INSTALL_PATH=$INSTALL_PATH
+    RUNTIME_INSTALL_PATH=$INSTALL_PATH
+    ;;
+  *)
+    ABS_INSTALL_PATH="$BUILD_DIR/$INSTALL_PATH"
+    RUNTIME_INSTALL_PATH="/app/$INSTALL_PATH"
+    ;;
 esac
 
 if ! command -v python >/dev/null 2>&1; then
@@ -60,7 +66,9 @@ python -m playwright install $BROWSERS $INSTALL_OPTIONS
 PROFILE_DIR="$BUILD_DIR/.profile.d"
 mkdir -p "$PROFILE_DIR"
 cat > "$PROFILE_DIR/playwright-browsers.sh" <<EOF
-export PLAYWRIGHT_BROWSERS_PATH='$ABS_INSTALL_PATH'
+export PLAYWRIGHT_BROWSERS_PATH='$RUNTIME_INSTALL_PATH'
+export PLAYWRIGHT_SKIP_BROWSER_GC='1'
 EOF
 
+log "Runtime PLAYWRIGHT_BROWSERS_PATH=$RUNTIME_INSTALL_PATH"
 log "Playwright browser installation complete"
