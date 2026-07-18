@@ -101,5 +101,15 @@ test -f "$BUILD_DIR/.apt/usr/lib/x86_64-linux-gnu/libatk-1.0.so.0"
 grep -q "PLAYWRIGHT_BROWSERS_PATH='/app/.cache/ms-playwright'" "$BUILD_DIR/.profile.d/playwright-browsers.sh"
 grep -q "PLAYWRIGHT_SKIP_BROWSER_GC='1'" "$BUILD_DIR/.profile.d/playwright-browsers.sh"
 grep -q "LD_LIBRARY_PATH" "$BUILD_DIR/.profile.d/playwright-browsers.sh"
+! grep -q "'\\$HOME" "$BUILD_DIR/.profile.d/playwright-browsers.sh"
+(
+  HOME=/app
+  # shellcheck disable=SC1091
+  source "$BUILD_DIR/.profile.d/playwright-browsers.sh"
+  case "$LD_LIBRARY_PATH" in
+    /app/.apt/usr/lib/x86_64-linux-gnu:*) ;;
+    *) printf 'LD_LIBRARY_PATH did not expand HOME: %s\n' "$LD_LIBRARY_PATH" >&2; exit 1 ;;
+  esac
+)
 
 printf 'smoke ok\n'
