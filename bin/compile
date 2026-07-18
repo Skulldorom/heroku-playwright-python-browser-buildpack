@@ -86,10 +86,10 @@ export PLAYWRIGHT_SKIP_BROWSER_GC=1
 python -m playwright install $BROWSERS $INSTALL_OPTIONS
 
 cat > "$PROFILE_DIR/playwright-browsers.sh" <<EOF
-export PATH='\$HOME/.apt/usr/bin:'"\$PATH"
-export LD_LIBRARY_PATH='\$HOME/.apt/usr/lib/x86_64-linux-gnu:\$HOME/.apt/usr/lib/i386-linux-gnu:\$HOME/.apt/usr/lib:\$HOME/.apt/lib/x86_64-linux-gnu:\$HOME/.apt/lib:'"\${LD_LIBRARY_PATH:-}"
-export LIBRARY_PATH='\$HOME/.apt/usr/lib/x86_64-linux-gnu:\$HOME/.apt/usr/lib/i386-linux-gnu:\$HOME/.apt/usr/lib:\$HOME/.apt/lib/x86_64-linux-gnu:\$HOME/.apt/lib:'"\${LIBRARY_PATH:-}"
-export PKG_CONFIG_PATH='\$HOME/.apt/usr/lib/x86_64-linux-gnu/pkgconfig:\$HOME/.apt/usr/lib/i386-linux-gnu/pkgconfig:\$HOME/.apt/usr/lib/pkgconfig:'"\${PKG_CONFIG_PATH:-}"
+export PATH="\$HOME/.apt/usr/bin:\$PATH"
+export LD_LIBRARY_PATH="\$HOME/.apt/usr/lib/x86_64-linux-gnu:\$HOME/.apt/usr/lib/i386-linux-gnu:\$HOME/.apt/usr/lib:\$HOME/.apt/lib/x86_64-linux-gnu:\$HOME/.apt/lib:\${LD_LIBRARY_PATH:-}"
+export LIBRARY_PATH="\$HOME/.apt/usr/lib/x86_64-linux-gnu:\$HOME/.apt/usr/lib/i386-linux-gnu:\$HOME/.apt/usr/lib:\$HOME/.apt/lib/x86_64-linux-gnu:\$HOME/.apt/lib:\${LIBRARY_PATH:-}"
+export PKG_CONFIG_PATH="\$HOME/.apt/usr/lib/x86_64-linux-gnu/pkgconfig:\$HOME/.apt/usr/lib/i386-linux-gnu/pkgconfig:\$HOME/.apt/usr/lib/pkgconfig:\${PKG_CONFIG_PATH:-}"
 export PLAYWRIGHT_BROWSERS_PATH='$RUNTIME_INSTALL_PATH'
 export PLAYWRIGHT_SKIP_BROWSER_GC='1'
 EOF
