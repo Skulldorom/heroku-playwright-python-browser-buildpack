@@ -46,9 +46,10 @@ whatever happens to be on `main` today. Shocking concept, deterministic deploys.
 Use the latest release URL so Heroku always fetches the newest tested release on each
 rebuild:
 
+```
+https://github.com/Skulldorom/heroku-playwright-python-browser-buildpack/releases/latest/download/buildpack.tgz
+```
 ```bash
-heroku buildpacks:clear --app <app-name>
-heroku buildpacks:add heroku/python --app <app-name>
 heroku buildpacks:add https://github.com/Skulldorom/heroku-playwright-python-browser-buildpack/releases/latest/download/buildpack.tgz --app <app-name>
 ```
 
