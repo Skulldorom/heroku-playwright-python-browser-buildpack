@@ -1,10 +1,12 @@
-name: Buildpack tests
+name: Release
 
 on:
   push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
 
 jobs:
   unit:
@@ -15,15 +17,9 @@ jobs:
       - run: test/run.sh
 
   integration:
-    name: Browser integration (${{ matrix.stack }})
+    name: Browser integration (heroku-26)
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - stack: heroku-26
-            image: heroku/heroku:26-build
-    container: ${{ matrix.image }}
+    container: heroku/heroku:26-build
     steps:
       - uses: actions/checkout@v7
       - name: Install Python Playwright
@@ -34,16 +30,31 @@ jobs:
           /tmp/playwright-venv/bin/pip install playwright
       - name: Compile buildpack and launch Chromium headless shell
         env:
-          STACK: ${{ matrix.stack }}
+          STACK: heroku-26
         run: |
           mkdir -p /app /tmp/buildpack-cache /tmp/buildpack-env
           export PATH="/tmp/playwright-venv/bin:$PATH"
           bin/compile /app /tmp/buildpack-cache /tmp/buildpack-env
           export HOME=/app
           . /app/.profile.d/playwright-browsers.sh
-          cat >/app/page.html <<'EOF'
-          <!doctype html><title>buildpack integration</title><h1>Playwright works</h1>
-          EOF
+          printf '%s\n' '<!doctype html><title>buildpack integration</title><h1>Playwright works</h1>' >/app/page.html
           browser=$(find "$PLAYWRIGHT_BROWSERS_PATH" -type f -name chrome-headless-shell -print -quit)
           test -n "$browser"
           "$browser" --no-sandbox --headless --disable-gpu --dump-dom file:///app/page.html | grep -q 'Playwright works'
+
+  release:
+    name: Publish GitHub release
+    needs: [unit, integration]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Package buildpack
+        run: git archive --format=tar.gz --prefix=heroku-playwright-python-browser-buildpack/ --output=buildpack.tgz "$GITHUB_SHA"
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" buildpack.tgz --verify-tag --generate-notes --title "$GITHUB_REF_NAME"
