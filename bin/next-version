@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+current=${1:-0.0.0}
+bump=${2:-patch}
+current=${current#v}
+
+if [[ ! $current =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+  echo "Invalid semantic version: $current" >&2
+  exit 1
+fi
+
+major=${BASH_REMATCH[1]}
+minor=${BASH_REMATCH[2]}
+patch=${BASH_REMATCH[3]}
+
+case "$bump" in
+  major) printf 'v%d.0.0\n' "$((major + 1))" ;;
+  minor) printf 'v%d.%d.0\n' "$major" "$((minor + 1))" ;;
+  patch) printf 'v%d.%d.%d\n' "$major" "$minor" "$((patch + 1))" ;;
+  *)
+    echo "Version increment must be major, minor, or patch: $bump" >&2
+    exit 1
+    ;;
+esac
