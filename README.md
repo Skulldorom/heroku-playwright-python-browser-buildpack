@@ -25,9 +25,22 @@ error while loading shared libraries: libatk-1.0.so.0: cannot open shared object
 
 Because apparently installing the package, installing the browser, and installing the browser's native libraries are three separate ceremonies. Naturally.
 
-## Buildpack order
+## Quick start
 
-Add this buildpack **after** `heroku/python` so the `playwright` Python package and CLI already exist:
+Your Python app must already depend on Playwright before this buildpack runs. Add it to
+`requirements.txt`, `pyproject.toml`, or your normal Python dependency manager:
+
+```text
+playwright
+```
+
+Then add this buildpack **after** `heroku/python` so Heroku has already installed the
+`playwright` Python package and CLI before this buildpack calls `python -m playwright`.
+
+### Option A: use the repository directly
+
+This follows the repository's default branch. It is convenient when you want the newest
+merged buildpack changes immediately:
 
 ```bash
 heroku buildpacks:clear --app <app-name>
@@ -42,7 +55,58 @@ Expected order:
 2. https://github.com/Skulldorom/heroku-playwright-python-browser-buildpack
 ```
 
-You should not need Heroku's Chrome for Testing buildpack for the default path. This buildpack installs Playwright's own browser binaries and the native libraries needed to launch them.
+### Option B: pin a GitHub release tarball
+
+Releases publish a tested `buildpack.tgz` asset. Pinning a release is usually better for
+production apps because rebuilds keep using the same tested buildpack version instead of
+whatever happens to be on `main` today. Shocking concept, deterministic deploys.
+
+Use a specific tag:
+
+```bash
+heroku buildpacks:clear --app <app-name>
+heroku buildpacks:add heroku/python --app <app-name>
+heroku buildpacks:add https://github.com/Skulldorom/heroku-playwright-python-browser-buildpack/releases/download/vX.Y.Z/buildpack.tgz --app <app-name>
+```
+
+Or, if you intentionally want Heroku to fetch the newest release on each rebuild, use the
+latest-release URL:
+
+```bash
+heroku buildpacks:add https://github.com/Skulldorom/heroku-playwright-python-browser-buildpack/releases/latest/download/buildpack.tgz --app <app-name>
+```
+
+Replace `vX.Y.Z` with a tag from the
+[releases page](https://github.com/Skulldorom/heroku-playwright-python-browser-buildpack/releases).
+
+### Using the Heroku Dashboard
+
+In the Heroku Dashboard, open your app and go to **Settings → Buildpacks**:
+
+1. Add the official `heroku/python` buildpack first.
+2. Add a custom buildpack URL second, using either:
+   - direct repo URL: `https://github.com/Skulldorom/heroku-playwright-python-browser-buildpack`
+   - pinned release URL: `https://github.com/Skulldorom/heroku-playwright-python-browser-buildpack/releases/download/vX.Y.Z/buildpack.tgz`
+   - latest release URL: `https://github.com/Skulldorom/heroku-playwright-python-browser-buildpack/releases/latest/download/buildpack.tgz`
+3. Confirm the buildpack order shows `heroku/python` before this buildpack.
+4. Trigger a fresh deploy so Heroku builds a new slug with the updated buildpack list.
+
+You should not need Heroku's Chrome for Testing buildpack for the default path. This
+buildpack installs Playwright's own browser binaries and the native libraries needed to
+launch them.
+
+### Redeploy after changing buildpacks
+
+Changing buildpacks only affects the next slug build. Trigger a new deploy after updating
+the buildpack list:
+
+```bash
+git commit --allow-empty -m "chore: rebuild with Playwright buildpack"
+git push heroku main
+```
+
+If you deploy through GitHub integration, pipelines, or another CI/CD system, trigger a
+fresh deploy there instead.
 
 ## What it installs
 
