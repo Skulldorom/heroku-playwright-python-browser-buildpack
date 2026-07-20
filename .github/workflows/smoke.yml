@@ -1,4 +1,4 @@
-name: Buildpack smoke test
+name: Buildpack tests
 
 on:
   push:
@@ -7,11 +7,45 @@ on:
     branches: [main]
 
 jobs:
-  smoke:
+  unit:
+    name: Fast stubbed tests
     runs-on: ubuntu-latest
     steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+      - run: test/run.sh
 
-      - name: Run buildpack smoke test
-        run: test/smoke.sh
+  integration:
+    name: Browser integration (${{ matrix.stack }})
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - stack: heroku-22
+            image: heroku/heroku:22-build
+          - stack: heroku-24
+            image: heroku/heroku:24-build
+    container: ${{ matrix.image }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Python Playwright
+        run: |
+          apt-get update
+          apt-get install -y python3 python3-pip python3-venv
+          python3 -m venv /tmp/playwright-venv
+          /tmp/playwright-venv/bin/pip install playwright
+      - name: Compile buildpack and launch Chromium headless shell
+        env:
+          STACK: ${{ matrix.stack }}
+        run: |
+          mkdir -p /app /tmp/buildpack-cache /tmp/buildpack-env
+          export PATH="/tmp/playwright-venv/bin:$PATH"
+          bin/compile /app /tmp/buildpack-cache /tmp/buildpack-env
+          . /app/.profile.d/playwright-browsers.sh
+          cat >/app/page.html <<'EOF'
+          <!doctype html><title>buildpack integration</title><h1>Playwright works</h1>
+          EOF
+          browser=$(find "$PLAYWRIGHT_BROWSERS_PATH" -type f -name chromium-headless-shell -print -quit)
+          test -n "$browser"
+          "$browser" --no-sandbox --headless --disable-gpu --dump-dom file:///app/page.html | grep -q 'Playwright works'
