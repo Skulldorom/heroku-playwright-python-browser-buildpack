@@ -74,8 +74,6 @@ else
   log "Skipping Playwright native dependency install"
 fi
 
-mkdir -p "$ABS_INSTALL_PATH"
-
 log "Installing Playwright browsers: $BROWSERS"
 log "PLAYWRIGHT_BROWSERS_PATH=$ABS_INSTALL_PATH"
 
