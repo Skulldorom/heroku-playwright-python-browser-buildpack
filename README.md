@@ -37,63 +37,64 @@ playwright
 Then add this buildpack **after** `heroku/python` so Heroku has already installed the
 `playwright` Python package and CLI before this buildpack calls `python -m playwright`.
 
-### Option A: use the repository directly
+### Option A: pin a GitHub release tarball (recommended)
 
-This follows the repository's default branch. It is convenient when you want the newest
-merged buildpack changes immediately:
+Releases publish a tested `buildpack.tgz` asset. Pinning a release is usually better for
+production apps because rebuilds keep using the same tested buildpack version instead of
+whatever happens to be on `main` today. Shocking concept, deterministic deploys.
+
+Use the latest release URL so Heroku always fetches the newest tested release on each
+rebuild:
 
 ```bash
 heroku buildpacks:clear --app <app-name>
 heroku buildpacks:add heroku/python --app <app-name>
-heroku buildpacks:add https://github.com/Skulldorom/heroku-playwright-python-browser-buildpack --app <app-name>
+heroku buildpacks:add https://github.com/Skulldorom/heroku-playwright-python-browser-buildpack/releases/latest/download/buildpack.tgz --app <app-name>
 ```
 
-Expected order:
+For full determinism, pin a specific tag instead:
+
+```bash
+heroku buildpacks:add https://github.com/Skulldorom/heroku-playwright-python-browser-buildpack/releases/download/vX.Y.Z/buildpack.tgz --app <app-name>
+```
+
+Replace `vX.Y.Z` with a tag from the
+[releases page](https://github.com/Skulldorom/heroku-playwright-python-browser-buildpack/releases).
+
+Expected buildpack order:
 
 ```text
 1. heroku/python
 2. https://github.com/Skulldorom/heroku-playwright-python-browser-buildpack
 ```
 
-### Option B: pin a GitHub release tarball
-
-Releases publish a tested `buildpack.tgz` asset. Pinning a release is usually better for
-production apps because rebuilds keep using the same tested buildpack version instead of
-whatever happens to be on `main` today. Shocking concept, deterministic deploys.
-
-Use a specific tag:
-
-```bash
-heroku buildpacks:clear --app <app-name>
-heroku buildpacks:add heroku/python --app <app-name>
-heroku buildpacks:add https://github.com/Skulldorom/heroku-playwright-python-browser-buildpack/releases/download/vX.Y.Z/buildpack.tgz --app <app-name>
-```
-
-Or, if you intentionally want Heroku to fetch the newest release on each rebuild, use the
-latest-release URL:
-
-```bash
-heroku buildpacks:add https://github.com/Skulldorom/heroku-playwright-python-browser-buildpack/releases/latest/download/buildpack.tgz --app <app-name>
-```
-
-Replace `vX.Y.Z` with a tag from the
-[releases page](https://github.com/Skulldorom/heroku-playwright-python-browser-buildpack/releases).
-
-### Using the Heroku Dashboard
+### Option B: using the Heroku Dashboard
 
 In the Heroku Dashboard, open your app and go to **Settings → Buildpacks**:
 
 1. Add the official `heroku/python` buildpack first.
-2. Add a custom buildpack URL second, using either:
-   - direct repo URL: `https://github.com/Skulldorom/heroku-playwright-python-browser-buildpack`
-   - pinned release URL: `https://github.com/Skulldorom/heroku-playwright-python-browser-buildpack/releases/download/vX.Y.Z/buildpack.tgz`
-   - latest release URL: `https://github.com/Skulldorom/heroku-playwright-python-browser-buildpack/releases/latest/download/buildpack.tgz`
+2. Add the buildpack URL second using either approach:
+   - **latest release:** `https://github.com/Skulldorom/heroku-playwright-python-browser-buildpack/releases/latest/download/buildpack.tgz`
+   - **pinned release:** `https://github.com/Skulldorom/heroku-playwright-python-browser-buildpack/releases/download/vX.Y.Z/buildpack.tgz`
+   - **direct repo:** `https://github.com/Skulldorom/heroku-playwright-python-browser-buildpack`
 3. Confirm the buildpack order shows `heroku/python` before this buildpack.
 4. Trigger a fresh deploy so Heroku builds a new slug with the updated buildpack list.
 
 You should not need Heroku's Chrome for Testing buildpack for the default path. This
 buildpack installs Playwright's own browser binaries and the native libraries needed to
 launch them.
+
+### Option C: use the repository directly
+
+This follows the repository's default branch. It is convenient when you want the newest
+merged buildpack changes immediately — just be aware that `main` can change between
+rebuilds, so this is best for development or staging apps:
+
+```bash
+heroku buildpacks:clear --app <app-name>
+heroku buildpacks:add heroku/python --app <app-name>
+heroku buildpacks:add https://github.com/Skulldorom/heroku-playwright-python-browser-buildpack --app <app-name>
+```
 
 ### Redeploy after changing buildpacks
 
