@@ -103,6 +103,19 @@ tar --exclude .git -czf heroku-playwright-python-browser-buildpack.tgz .
 
 Then upload/use the `.tgz` wherever you maintain custom buildpacks.
 
+## Dependency maintenance
+
+Dependabot checks the GitHub Actions used by this repository every week. Dependabot
+alerts and Dependabot security updates are also enabled in the repository security
+settings. Pull requests created by Dependabot run the same buildpack smoke workflow
+as other pull requests.
+
+The Ubuntu packages installed by `bin/install-native-deps` are resolved directly
+through APT rather than declared in a dependency manifest supported by Dependabot.
+Dependabot therefore cannot propose updates for those packages. The stack integration
+tests are the control for detecting package availability or compatibility changes on
+the supported Heroku stacks.
+
 ## License
 
 MIT
