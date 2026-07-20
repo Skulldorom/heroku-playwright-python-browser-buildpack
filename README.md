@@ -53,7 +53,7 @@ By default the buildpack installs:
   - `PLAYWRIGHT_SKIP_BROWSER_GC=1`
   - `LD_LIBRARY_PATH` pointing at `/app/.apt/...`
 
-The native package list is stack-aware for Heroku-22, Heroku-24, and Heroku-26. It includes the packages Playwright maps for Chromium, including `libatk`, `libatk-bridge`, `libasound`, `libnss3`, `libgbm1`, and the other tiny shared-library goblins Chromium demands.
+The native package list is stack-aware for Heroku-22, Heroku-24, and Heroku-26. It includes the packages Playwright maps for Chromium, including `libatk`, `libatk-bridge`, `libasound`, `libnss3`, `libgbm1`, and the other tiny shared-library goblins Chromium demands. Integration tests run against all three stacks on every push to `main`.
 
 ## Configuration
 
