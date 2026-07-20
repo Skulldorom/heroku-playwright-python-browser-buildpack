@@ -15,7 +15,9 @@ write_python() {
 set -euo pipefail
 if [ "${1:-}" = -c ]; then [ "${PLAYWRIGHT_MISSING:-0}" != 1 ]; exit; fi
 if [ "${1:-}" = -m ] && [ "${2:-}" = playwright ] && [ "${3:-}" = install ]; then
-  printf 'args=%s\npath=%s\nskip=%s\n' "${*:4}" "$PLAYWRIGHT_BROWSERS_PATH" "$PLAYWRIGHT_SKIP_BROWSER_GC" >"$BUILD_DIR/install.log"
+  if [ -d "$PLAYWRIGHT_BROWSERS_PATH" ]; then path_precreated=yes; else path_precreated=no; fi
+  printf 'args=%s\npath=%s\npath_precreated=%s\nskip=%s\n' \
+    "${*:4}" "$PLAYWRIGHT_BROWSERS_PATH" "$path_precreated" "$PLAYWRIGHT_SKIP_BROWSER_GC" >"$BUILD_DIR/install.log"
   exit 0
 fi
 exit 2
@@ -84,6 +86,7 @@ setup
 printf '/app/shared/browsers' >"$ENV_DIR/PLAYWRIGHT_BROWSERS_PATH"
 run_compile >/dev/null
 assert_contains "$BUILD_DIR/install.log" "path=/app/shared/browsers"
+assert_contains "$BUILD_DIR/install.log" "path_precreated=no"
 assert_contains "$BUILD_DIR/.profile.d/playwright-browsers.sh" "PLAYWRIGHT_BROWSERS_PATH='/app/shared/browsers'"
 rm -rf "$TEST_TMP"
 
