@@ -105,13 +105,14 @@ Then upload/use the `.tgz` wherever you maintain custom buildpacks.
 
 ## Releases
 
-Every push to `main` runs the release workflow. It runs the stubbed test suite and a
-real browser launch on Heroku-26 before publishing a GitHub release with automatically
-generated notes and a `buildpack.tgz` archive. A failed test prevents the release job
-from running. Successful automatic releases increment the latest semantic version's
-patch component; the first release is `v0.0.1`. Releases are serialized so concurrent
-pushes cannot select the same version. The browser integration also runs for pull
-requests, so compatibility failures are caught before changes reach `main`.
+Every push to `main` runs the buildpack test workflow. After that workflow passes its
+stubbed test suite and real browser launch on Heroku-26, its exact tested commit is
+published as a GitHub release with automatically generated notes and a `buildpack.tgz`
+archive. A failed or cancelled test workflow does not start the release job. Successful
+automatic releases increment the latest semantic version's patch component; the first
+release is `v0.0.1`. Releases are serialized so concurrent pushes cannot select the
+same version. The browser integration also runs for pull requests, so compatibility
+failures are caught before changes reach `main`.
 
 To create a release manually, open **Actions → Release → Run workflow**, select the
 commit or branch to release, and choose a `major`, `minor`, or `patch` increment. The
