@@ -11,7 +11,7 @@ jobs:
     name: Fast stubbed tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - run: test/run.sh
 
   integration:
@@ -28,7 +28,7 @@ jobs:
             image: heroku/heroku:24-build
     container: ${{ matrix.image }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Install Python Playwright
         run: |
           apt-get update
