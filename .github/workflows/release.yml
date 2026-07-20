@@ -4,6 +4,12 @@ on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Version tag to create (must begin with v)
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -19,7 +25,11 @@ jobs:
   integration:
     name: Browser integration (heroku-26)
     runs-on: ubuntu-latest
-    container: heroku/heroku:26-build
+    # The Heroku image defaults to an unprivileged user that cannot write the
+    # runner's file-command directory used by actions/checkout.
+    container:
+      image: heroku/heroku:26-build
+      options: --user root
     steps:
       - uses: actions/checkout@v7
       - name: Install Python Playwright
@@ -57,4 +67,15 @@ jobs:
       - name: Create release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" buildpack.tgz --verify-tag --generate-notes --title "$GITHUB_REF_NAME"
+          RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
+        run: |
+          case "$RELEASE_TAG" in
+            v*) ;;
+            *) echo "Release tag must begin with v: $RELEASE_TAG" >&2; exit 1 ;;
+          esac
+
+          if [ "$GITHUB_EVENT_NAME" = workflow_dispatch ]; then
+            gh release create "$RELEASE_TAG" buildpack.tgz --target "$GITHUB_SHA" --generate-notes --title "$RELEASE_TAG"
+          else
+            gh release create "$RELEASE_TAG" buildpack.tgz --verify-tag --generate-notes --title "$RELEASE_TAG"
+          fi

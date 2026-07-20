@@ -23,7 +23,11 @@ jobs:
         include:
           - stack: heroku-26
             image: heroku/heroku:26-build
-    container: ${{ matrix.image }}
+    # The Heroku image defaults to an unprivileged user that cannot write the
+    # runner's file-command directory used by actions/checkout.
+    container:
+      image: ${{ matrix.image }}
+      options: --user root
     steps:
       - uses: actions/checkout@v7
       - name: Install Python Playwright

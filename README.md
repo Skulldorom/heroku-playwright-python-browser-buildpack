@@ -118,6 +118,11 @@ automatically generated notes and a `buildpack.tgz` archive. A failed test preve
 the release job from running. The browser integration also runs for pull requests,
 so compatibility failures are caught before changes reach `main`.
 
+To create a release manually, open **Actions → Release → Run workflow**, select the
+commit or branch to release, and enter a new version tag beginning with `v`. The
+workflow tests the selected commit, creates the tag at that exact commit, and then
+publishes the release. The tag-push and manual paths use the same test gates.
+
 ## Dependency maintenance
 
 Dependabot checks the GitHub Actions used by this repository every week. Dependabot
