@@ -100,4 +100,17 @@ jobs:
           RELEASE_TAG: ${{ steps.version.outputs.tag }}
           RELEASE_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
         run: |
-          gh release create "$RELEASE_TAG" buildpack.tgz --target "$RELEASE_SHA" --generate-notes --title "$RELEASE_TAG"
+          BUILD_URL="https://github.com/Skulldorom/heroku-playwright-python-browser-buildpack/releases/download/${RELEASE_TAG}/buildpack.tgz"
+          cat > /tmp/release-notes.md <<NOTES
+          ## Install
+
+          \`\`\`bash
+          heroku buildpacks:add ${BUILD_URL} --app <app-name>
+          \`\`\`
+
+          [${BUILD_URL}](${BUILD_URL})
+          NOTES
+          gh release create "$RELEASE_TAG" buildpack.tgz \
+            --target "$RELEASE_SHA" \
+            --title "$RELEASE_TAG" \
+            --notes-file /tmp/release-notes.md
