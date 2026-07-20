@@ -1,0 +1,81 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Version tag to create (must begin with v)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  unit:
+    name: Fast stubbed tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - run: test/run.sh
+
+  integration:
+    name: Browser integration (heroku-26)
+    runs-on: ubuntu-latest
+    # The Heroku image defaults to an unprivileged user that cannot write the
+    # runner's file-command directory used by actions/checkout.
+    container:
+      image: heroku/heroku:26-build
+      options: --user root
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install Python Playwright
+        run: |
+          apt-get update
+          apt-get install -y python3 python3-pip python3-venv
+          python3 -m venv /tmp/playwright-venv
+          /tmp/playwright-venv/bin/pip install playwright
+      - name: Compile buildpack and launch Chromium headless shell
+        env:
+          STACK: heroku-26
+        run: |
+          mkdir -p /app /tmp/buildpack-cache /tmp/buildpack-env
+          export PATH="/tmp/playwright-venv/bin:$PATH"
+          bin/compile /app /tmp/buildpack-cache /tmp/buildpack-env
+          export HOME=/app
+          . /app/.profile.d/playwright-browsers.sh
+          printf '%s\n' '<!doctype html><title>buildpack integration</title><h1>Playwright works</h1>' >/app/page.html
+          browser=$(find "$PLAYWRIGHT_BROWSERS_PATH" -type f -name chrome-headless-shell -print -quit)
+          test -n "$browser"
+          "$browser" --no-sandbox --headless --disable-gpu --dump-dom file:///app/page.html | grep -q 'Playwright works'
+
+  release:
+    name: Publish GitHub release
+    needs: [unit, integration]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Package buildpack
+        run: git archive --format=tar.gz --prefix=heroku-playwright-python-browser-buildpack/ --output=buildpack.tgz "$GITHUB_SHA"
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
+        run: |
+          case "$RELEASE_TAG" in
+            v*) ;;
+            *) echo "Release tag must begin with v: $RELEASE_TAG" >&2; exit 1 ;;
+          esac
+
+          if [ "$GITHUB_EVENT_NAME" = workflow_dispatch ]; then
+            gh release create "$RELEASE_TAG" buildpack.tgz --target "$GITHUB_SHA" --generate-notes --title "$RELEASE_TAG"
+          else
+            gh release create "$RELEASE_TAG" buildpack.tgz --verify-tag --generate-notes --title "$RELEASE_TAG"
+          fi

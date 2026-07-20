@@ -103,6 +103,26 @@ tar --exclude .git -czf heroku-playwright-python-browser-buildpack.tgz .
 
 Then upload/use the `.tgz` wherever you maintain custom buildpacks.
 
+## Releases
+
+Push a version tag to create a GitHub release:
+
+```bash
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+Tags beginning with `v` trigger the release workflow. It runs the stubbed test suite
+and a real browser launch on Heroku-26 before publishing a GitHub release with
+automatically generated notes and a `buildpack.tgz` archive. A failed test prevents
+the release job from running. The browser integration also runs for pull requests,
+so compatibility failures are caught before changes reach `main`.
+
+To create a release manually, open **Actions → Release → Run workflow**, select the
+commit or branch to release, and enter a new version tag beginning with `v`. The
+workflow tests the selected commit, creates the tag at that exact commit, and then
+publishes the release. The tag-push and manual paths use the same test gates.
+
 ## Dependency maintenance
 
 Dependabot checks the GitHub Actions used by this repository every week. Dependabot
