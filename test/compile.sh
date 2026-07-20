@@ -33,7 +33,10 @@ run_compile() { PATH="$FAKEBIN:$PATH" BUILD_DIR="$BUILD_DIR" STACK="${STACK:-her
 
 # Missing Python.
 setup
-assert_failure env PATH=/usr/bin:/bin "$COMPILE" "$BUILD_DIR" "$CACHE_DIR" "$ENV_DIR" 2>"$TEST_TMP/error"
+NO_PYTHON_BIN="$TEST_TMP/no-python-bin"
+mkdir -p "$NO_PYTHON_BIN"
+ln -s "$(command -v dirname)" "$NO_PYTHON_BIN/dirname"
+assert_failure env PATH="$NO_PYTHON_BIN" /bin/bash "$COMPILE" "$BUILD_DIR" "$CACHE_DIR" "$ENV_DIR" 2>"$TEST_TMP/error"
 assert_contains "$TEST_TMP/error" "python was not found"
 rm -rf "$TEST_TMP"
 
