@@ -37,7 +37,7 @@ EOF
 }
 
 setup() { new_fixture; write_python; write_native_stub; }
-run_compile() { PATH="$FAKEBIN:$PATH" BUILD_DIR="$BUILD_DIR" STACK="${STACK:-heroku-24}" "$COMPILE" "$BUILD_DIR" "$CACHE_DIR" "$ENV_DIR"; }
+run_compile() { PATH="$FAKEBIN:$PATH" BUILD_DIR="$BUILD_DIR" STACK="${STACK:-heroku-26}" "$COMPILE" "$BUILD_DIR" "$CACHE_DIR" "$ENV_DIR"; }
 
 # Missing Python.
 setup
@@ -70,7 +70,7 @@ printf '%s' '--with-deps --force' >"$ENV_DIR/PLAYWRIGHT_INSTALL_OPTIONS"
 printf 'libone libtwo' >"$ENV_DIR/PLAYWRIGHT_NATIVE_DEPS_PACKAGES"
 PLAYWRIGHT_BUILDPACK_BROWSERS=chromium PLAYWRIGHT_INSTALL_OPTIONS=bad run_compile >/dev/null
 assert_contains "$BUILD_DIR/install.log" "args=firefox webkit --with-deps --force"
-assert_contains "$BUILD_DIR/native.log" "heroku-24 libone libtwo"
+assert_contains "$BUILD_DIR/native.log" "heroku-26 libone libtwo"
 rm -rf "$TEST_TMP"
 
 # Relative paths install under BUILD_DIR and become /app paths at runtime.

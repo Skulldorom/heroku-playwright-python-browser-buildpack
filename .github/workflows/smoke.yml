@@ -22,10 +22,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - stack: heroku-22
-            image: heroku/heroku:22-build
-          - stack: heroku-24
-            image: heroku/heroku:24-build
           - stack: heroku-26
             image: heroku/heroku:26-build
     container: ${{ matrix.image }}
