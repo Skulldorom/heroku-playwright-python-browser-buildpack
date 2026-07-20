@@ -1,5 +1,7 @@
 # Heroku Playwright Python Browser Buildpack
 
+[![Buildpack tests](https://github.com/Skulldorom/heroku-playwright-python-browser-buildpack/actions/workflows/smoke.yml/badge.svg)](https://github.com/Skulldorom/heroku-playwright-python-browser-buildpack/actions/workflows/smoke.yml)
+
 A small classic Heroku buildpack that installs Playwright browser binaries **and the native Ubuntu libraries Chromium needs** for Python apps after the official `heroku/python` buildpack has installed your dependencies.
 
 This is intended for Flask/FastAPI/Django apps that use Python Playwright at runtime, for example:
