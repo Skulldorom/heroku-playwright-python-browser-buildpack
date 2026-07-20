@@ -3,6 +3,12 @@ set -euo pipefail
 source "$(dirname "$0")/helpers.sh"
 trap 'rm -rf "${TEST_TMP:-}"' EXIT
 
+# Keep the fixtures independent of buildpack configuration exported by the
+# machine running the tests (for example, PLAYWRIGHT_BROWSERS_PATH=/app).
+unset PLAYWRIGHT_BUILDPACK_BROWSERS PLAYWRIGHT_INSTALL_OPTIONS
+unset PLAYWRIGHT_BROWSERS_PATH PLAYWRIGHT_INSTALL_NATIVE_DEPS
+unset PLAYWRIGHT_NATIVE_DEPS_PACKAGES PLAYWRIGHT_MISSING STACK
+
 write_python() {
   cat >"$FAKEBIN/python" <<'EOF'
 #!/usr/bin/env bash
