@@ -53,7 +53,7 @@ By default the buildpack installs:
   - `PLAYWRIGHT_SKIP_BROWSER_GC=1`
   - `LD_LIBRARY_PATH` pointing at `/app/.apt/...`
 
-The native package list is stack-aware for Heroku-22, Heroku-24, and Heroku-26. It includes the packages Playwright maps for Chromium, including `libatk`, `libatk-bridge`, `libasound`, `libnss3`, `libgbm1`, and the other tiny shared-library goblins Chromium demands. Integration tests run against all three stacks on every push to `main`.
+The native package list targets Heroku-26. It includes the packages Playwright maps for Chromium, including `libatk`, `libatk-bridge`, `libasound`, `libnss3`, `libgbm1`, and the other tiny shared-library goblins Chromium demands. Integration tests run against the supported stack on every push to `main`.
 
 ## Configuration
 
@@ -114,7 +114,7 @@ The Ubuntu packages installed by `bin/install-native-deps` are resolved directly
 through APT rather than declared in a dependency manifest supported by Dependabot.
 Dependabot therefore cannot propose updates for those packages. The stack integration
 tests are the control for detecting package availability or compatibility changes on
-the supported Heroku stacks.
+the supported Heroku stack.
 
 ## License
 
