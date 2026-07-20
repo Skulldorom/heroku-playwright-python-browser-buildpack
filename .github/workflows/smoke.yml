@@ -26,6 +26,8 @@ jobs:
             image: heroku/heroku:22-build
           - stack: heroku-24
             image: heroku/heroku:24-build
+          - stack: heroku-26
+            image: heroku/heroku:26-build
     container: ${{ matrix.image }}
     steps:
       - uses: actions/checkout@v7
@@ -42,6 +44,7 @@ jobs:
           mkdir -p /app /tmp/buildpack-cache /tmp/buildpack-env
           export PATH="/tmp/playwright-venv/bin:$PATH"
           bin/compile /app /tmp/buildpack-cache /tmp/buildpack-env
+          export HOME=/app
           . /app/.profile.d/playwright-browsers.sh
           cat >/app/page.html <<'EOF'
           <!doctype html><title>buildpack integration</title><h1>Playwright works</h1>
